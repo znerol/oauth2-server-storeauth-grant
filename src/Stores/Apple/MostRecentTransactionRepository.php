@@ -11,8 +11,10 @@ use Lcobucci\JWT\UnencryptedToken;
 use Lcobucci\JWT\Validation\Validator;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
+use RuntimeException;
 use StoreAuth\Exceptions\StoreAuthException;
 use StoreAuth\JWT\Validation\Constraint\SignedWithCertificateChain;
+use StoreAuth\Oauth2\ServiceAccount;
 
 final class MostRecentTransactionRepository
 {
@@ -21,24 +23,35 @@ final class MostRecentTransactionRepository
     private Validator $validator;
 
     /**
-     * @var \Lcobucci\JWT\Validation\Constraint[]
+     * @param non-empty-string[] $appleTrustAnchors
      */
-    private array $constraints;
+    public static function fromConfig(
+        ClientInterface $httpClient,
+        RequestFactoryInterface $requestFactory,
+        ServiceAccount $serviceAccount,
+        array $appleTrustAnchors
+    ): static {
+        $signedWith = new SignedWithCertificateChain(new Sha256(), $appleTrustAnchors);
+        return new static(
+            httpClient: $httpClient,
+            requestFactory: $requestFactory,
+            serviceAccount: $serviceAccount,
+            constraints: [$signedWith]
+        );
+    }
 
     /**
      * Constructs new apple transaction repository.
      *
-     * @param non-empty-string[] $appleTrustAnchors
+     * @param \Lcobucci\JWT\Validation\Constraint[] $constraints
      */
     public function __construct(
         private ClientInterface $httpClient,
         private RequestFactoryInterface $requestFactory,
-        private AppleAccount $serviceAccount,
-        array $appleTrustAnchors,
+        private ServiceAccount $serviceAccount,
+        private array $constraints,
     ) {
         $this->parser = new Parser(new JoseEncoder());
-        $signedWith = new SignedWithCertificateChain(new Sha256(), $appleTrustAnchors);
-        $this->constraints = [$signedWith];
         $this->validator = new Validator();
     }
 
@@ -96,7 +109,11 @@ final class MostRecentTransactionRepository
         }
 
         $responsePayload = json_decode($transactionResponse->getBody()->getContents(), true);
-        if (!is_array($responsePayload) || !is_array($responsePayload["signedTransactions"])) {
+        if (
+            !is_array($responsePayload) ||
+            !isset($responsePayload["signedTransactions"]) ||
+            !is_array($responsePayload["signedTransactions"])
+        ) {
             throw new StoreAuthException("Unexpected data returned from apple storekit transaction history endpoint.");
         }
 
@@ -106,7 +123,11 @@ final class MostRecentTransactionRepository
         }
 
         $parsedPayload = $this->parser->parse($signedTransactions[0]);
-        $this->validator->assert($parsedPayload, ...$this->constraints);
+        try {
+            $this->validator->assert($parsedPayload, ...$this->constraints);
+        } catch (RuntimeException $e) {
+            throw new StoreAuthException("Verification failed for data returned from apple storekit transaction history endpoint.", previous: $e);
+        }
 
         assert($parsedPayload instanceof UnencryptedToken);
         $result = $parsedPayload->claims()->all();

@@ -13,13 +13,14 @@ use Lcobucci\JWT\Configuration;
 use Lcobucci\JWT\Signer\Ecdsa\Sha256;
 use Lcobucci\JWT\Signer\Key\InMemory;
 use Psr\Clock\ClockInterface;
+use StoreAuth\Oauth2\ServiceAccount;
 
 /**
  * Implements service account for apple appstore connect API.
  *
  * @see https://developer.apple.com/documentation/appstoreserverapi/generating_json_web_tokens_for_api_requests
  */
-final class AppleAccount
+final class AppleAccount implements ServiceAccount
 {
     private const AUTH_TOKEN_AUDIENCE = "appstoreconnect-v1";
 
@@ -49,28 +50,32 @@ final class AppleAccount
         $this->accessExpires = new DateTimeImmutable("@0");
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function getBearerToken(): string
     {
-        if ($this->accessExpires < $this->clock->now()) {
-            $this->renewBearerToken();
+        $now = $this->clock->now();
+        if ($this->accessExpires < $now) {
+            $this->renewBearerToken($now);
         }
+        assert(strlen($this->accessToken) > 0);
         return $this->accessToken;
     }
 
-    private function renewBearerToken(): void
+    private function renewBearerToken(DateTimeImmutable $iat): void
     {
-        $now = $this->clock->now();
         $key = InMemory::plainText($this->privateKey);
         $config = Configuration::forSymmetricSigner(new Sha256(), $key);
 
-        $this->accessExpires = $now->add($this->accessTokenTTL);
+        $this->accessExpires = $iat->add($this->accessTokenTTL);
         $this->accessToken = $config->builder()
             ->withHeader("kid", $this->kid)
             ->issuedBy($this->iss)
             ->withClaim("bid", $this->bid)
             ->permittedFor(self::AUTH_TOKEN_AUDIENCE)
-            ->issuedAt($now)
-            ->canOnlyBeUsedAfter($now)
+            ->issuedAt($iat)
+            ->canOnlyBeUsedAfter($iat)
             ->expiresAt($this->accessExpires)
             ->getToken($config->signer(), $config->signingKey())
             ->toString();
