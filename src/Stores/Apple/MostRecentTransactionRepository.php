@@ -5,22 +5,41 @@ declare(strict_types=1);
 namespace StoreAuth\Stores\Apple;
 
 use Lcobucci\JWT\Encoding\JoseEncoder;
+use Lcobucci\JWT\Signer\Ecdsa\Sha256;
 use Lcobucci\JWT\Token\Parser;
 use Lcobucci\JWT\UnencryptedToken;
+use Lcobucci\JWT\Validation\Validator;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use StoreAuth\Exceptions\StoreAuthException;
+use StoreAuth\JWT\Validation\Constraint\SignedWithCertificateChain;
 
 final class MostRecentTransactionRepository
 {
+    private Parser $parser;
+
+    private Validator $validator;
+
+    /**
+     * @var \Lcobucci\JWT\Validation\Constraint[]
+     */
+    private array $constraints;
+
     /**
      * Constructs new apple transaction repository.
+     *
+     * @param non-empty-string[] $appleTrustAnchors
      */
     public function __construct(
         private ClientInterface $httpClient,
         private RequestFactoryInterface $requestFactory,
-        private AppleAccount $serviceAccount
+        private AppleAccount $serviceAccount,
+        array $appleTrustAnchors,
     ) {
+        $this->parser = new Parser(new JoseEncoder());
+        $signedWith = new SignedWithCertificateChain(new Sha256(), $appleTrustAnchors);
+        $this->constraints = [$signedWith];
+        $this->validator = new Validator();
     }
 
     /**
@@ -86,8 +105,9 @@ final class MostRecentTransactionRepository
             return false;
         }
 
-        $parser = new Parser(new JoseEncoder());
-        $parsedPayload = $parser->parse($signedTransactions[0]);
+        $parsedPayload = $this->parser->parse($signedTransactions[0]);
+        $this->validator->assert($parsedPayload, ...$this->constraints);
+
         assert($parsedPayload instanceof UnencryptedToken);
         $result = $parsedPayload->claims()->all();
         assert(is_string($result["transactionId"]));
