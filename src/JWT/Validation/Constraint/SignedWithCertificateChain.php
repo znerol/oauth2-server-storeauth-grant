@@ -47,6 +47,10 @@ class SignedWithCertificateChain implements SignedWithInterface
             throw ConstraintViolation::error("You should pass a plain token", $this);
         }
 
+        if (!$token->headers()->has("x5c")) {
+            throw ConstraintViolation::error("Certificate header is missing", $this);
+        }
+
         $chain = $token->headers()->get("x5c");
         if (!is_array($chain) || count($chain) < 1) {
             throw ConstraintViolation::error("Certificate header contains unexpected data", $this);

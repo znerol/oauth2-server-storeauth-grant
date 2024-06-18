@@ -21,6 +21,7 @@ trait KeypairTrait
      * } $options
      *
      * @return array{
+     *     "keypair": \OpenSSLAsymmetricKey,
      *     "private": non-empty-string,
      *     "public": non-empty-string,
      * }
@@ -38,6 +39,10 @@ trait KeypairTrait
         $result = openssl_pkey_export($keypair, $privatePem);
         $this->assertNotFalse($result);
 
-        return ["private" => $privatePem, "public" => $publicPem];
+        return [
+            "keypair" => $keypair,
+            "private" => $privatePem,
+            "public" => $publicPem
+        ];
     }
 }
