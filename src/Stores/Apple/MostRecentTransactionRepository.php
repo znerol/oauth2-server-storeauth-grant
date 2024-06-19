@@ -19,9 +19,9 @@ use StoreAuth\Oauth2\ServiceAccount;
 
 final class MostRecentTransactionRepository
 {
-    private Parser $parser;
+    private readonly Parser $parser;
 
-    private Validator $validator;
+    private readonly Validator $validator;
 
     /**
      * @param non-empty-string[] $appleTrustAnchors
@@ -30,8 +30,11 @@ final class MostRecentTransactionRepository
         ClientInterface $httpClient,
         RequestFactoryInterface $requestFactory,
         ServiceAccount $serviceAccount,
-        array $appleTrustAnchors
+        ?array $appleTrustAnchors = null,
     ): static {
+        if ($appleTrustAnchors === null) {
+            $appleTrustAnchors = [__DIR__ . '/../../../certs/apple-root-bundle.pem'];
+        }
         $signedWith = new SignedWithCertificateChain(new Sha256(), $appleTrustAnchors);
         return new static(
             httpClient: $httpClient,

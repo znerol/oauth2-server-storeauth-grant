@@ -19,7 +19,7 @@ use RuntimeException;
  * @see https://datatracker.ietf.org/doc/html/rfc7515#section-4.1.6
  */
 
-class SignedWithCertificateChain implements SignedWithInterface
+final class SignedWithCertificateChain implements SignedWithInterface
 {
     /**
      * Temporary directory to use for intermediate certificates.
