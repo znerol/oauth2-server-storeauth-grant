@@ -11,6 +11,11 @@ trait KeypairTrait
         "private_key_type" => OPENSSL_KEYTYPE_EC,
     ];
 
+    protected const RSA_KEYPAIR_PARAMS = [
+        "private_key_bits" => 2048,
+        "private_key_type" => OPENSSL_KEYTYPE_RSA,
+    ];
+
     /**
      * Returns keypair encoded in PEM format.
      *

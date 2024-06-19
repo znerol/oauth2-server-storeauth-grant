@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace StoreAuth\Stores\Google;
 
+use JsonException;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use RuntimeException;
 use StoreAuth\Exceptions\StoreAuthException;
+use StoreAuth\Oauth2\ServiceAccount;
 
 final class ProductPurchaseRepository
 {
@@ -28,7 +30,7 @@ final class ProductPurchaseRepository
         array $config,
         ClientInterface $httpClient,
         RequestFactoryInterface $requestFactory,
-        ?GoogleAccount $serviceAccount = null
+        ?ServiceAccount $serviceAccount = null
     ): static {
         return new static(
             packageId: $packageId,
@@ -45,7 +47,7 @@ final class ProductPurchaseRepository
         private string $packageId,
         private ClientInterface $httpClient,
         private RequestFactoryInterface $requestFactory,
-        private GoogleAccount $serviceAccount
+        private ServiceAccount $serviceAccount
     ) {
     }
 
@@ -66,7 +68,7 @@ final class ProductPurchaseRepository
      *   "kind": string,
      *   "orderId": string,
      *   "purchaseState": int,
-     *   "purchaseTimeMillis": int,
+     *   "purchaseTimeMillis": string,
      *   "purchaseType": int,
      *   "regionCode": string,
      * }
@@ -91,17 +93,24 @@ final class ProductPurchaseRepository
             throw new StoreAuthException("Failed to fetch product purchase from google endpoint. Response status=$responseCode");
         }
 
-        $result = json_decode($statusResponse->getBody()->getContents(), true);
-        if (!is_array($result)) {
-            throw new StoreAuthException("Unexpected data returned from google product purchase endpoint.");
+        try {
+            $result = json_decode(
+                json: $statusResponse->getBody()->getContents(),
+                associative: true,
+                flags: JSON_THROW_ON_ERROR
+            );
+        } catch (RuntimeException | JsonException $e) {
+            throw new StoreAuthException("Unexpected data returned from google product purchase endpoint.", previous: $e);
         }
+
+        assert(is_array($result));
         assert(is_int($result["acknowledgementState"]));
         assert(is_int($result["consumptionState"]));
         assert(is_string($result["developerPayload"]));
         assert(is_string($result["kind"]));
         assert(is_string($result["orderId"]));
         assert(is_int($result["purchaseState"]));
-        assert(is_int($result["purchaseTimeMillis"]));
+        assert(is_string($result["purchaseTimeMillis"]));
         assert(is_int($result["purchaseType"]));
         assert(is_string($result["regionCode"]));
         return $result;

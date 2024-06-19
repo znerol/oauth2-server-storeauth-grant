@@ -19,10 +19,11 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
 use StoreAuth\Stores\Apple\AppleAccount;
+use StoreAuth\Tests\JWT\Validation\Constraint\HasHeaderWithValue;
 use StoreAuth\Tests\KeypairTrait;
 
 #[CoversClass(className: AppleAccount::class)]
-class AppleAccountTest extends TestCase
+final class AppleAccountTest extends TestCase
 {
     use KeypairTrait;
 
@@ -44,15 +45,15 @@ class AppleAccountTest extends TestCase
         $bearerToken = $account->getBearerToken();
 
         $jwt = new JwtFacade();
-        $parsedToken = $jwt->parse(
+        $jwt->parse(
             $bearerToken,
             new SignedWith(new Sha256(), InMemory::plainText($publicKey)),
             new StrictValidAt($clock),
             new IssuedBy($iss),
             new PermittedFor("appstoreconnect-v1"),
             new HasClaimWithValue("bid", $bid),
+            new HasHeaderWithValue("kid", $kid),
         );
-        $this->assertSame($kid, $parsedToken->headers()->get("kid"));
     }
 
     public function testTokenExpiry(): void

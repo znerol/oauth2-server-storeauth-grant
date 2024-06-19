@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace StoreAuth\Stores\Apple;
 
+use JsonException;
 use Lcobucci\JWT\Encoding\JoseEncoder;
 use Lcobucci\JWT\Signer\Ecdsa\Sha256;
 use Lcobucci\JWT\Token\Parser;
@@ -108,14 +109,18 @@ final class MostRecentTransactionRepository
             throw new StoreAuthException("Failed to fetch transaction history from apple storekit endpoint. Response status=$responseCode");
         }
 
-        $responsePayload = json_decode($transactionResponse->getBody()->getContents(), true);
-        if (
-            !is_array($responsePayload) ||
-            !isset($responsePayload["signedTransactions"]) ||
-            !is_array($responsePayload["signedTransactions"])
-        ) {
-            throw new StoreAuthException("Unexpected data returned from apple storekit transaction history endpoint.");
+        try {
+            $responsePayload = json_decode(
+                json: $transactionResponse->getBody()->getContents(),
+                associative: true,
+                flags: JSON_THROW_ON_ERROR
+            );
+        } catch (RuntimeException | JsonException $e) {
+            throw new StoreAuthException("Failed to parse data returned from apple storekit transaction history endpoint.", previous: $e);
         }
+
+        assert(is_array($responsePayload));
+        assert(is_array($responsePayload["signedTransactions"]));
 
         $signedTransactions = $responsePayload["signedTransactions"];
         if (count($signedTransactions) === 0) {

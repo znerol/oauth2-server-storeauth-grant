@@ -23,7 +23,7 @@ use StoreAuth\Stores\Apple\MostRecentTransactionRepository;
 use StoreAuth\Tests\KeypairTrait;
 
 #[CoversClass(className: MostRecentTransactionRepository::class)]
-class MostRecentTransactionRepositoryTest extends TestCase
+final class MostRecentTransactionRepositoryTest extends TestCase
 {
     use KeypairTrait;
 
@@ -216,7 +216,7 @@ class MostRecentTransactionRepositoryTest extends TestCase
         $repository->get($productId, $transactionId);
     }
 
-    public function testInvalidResponse(): void
+    public function testInvalidJsonResponse(): void
     {
         // Setup bearer token.
         $bearerToken = "Z1TfjnIzC2WwCX7Es4dTuMvM6LusPVnj";
@@ -242,13 +242,10 @@ class MostRecentTransactionRepositoryTest extends TestCase
             ->willReturn($request);
 
         // Setup response body.
-        $responseRecord = ["unexpected" => "data"];
-        $responseJson = json_encode($responseRecord);
-
         $responseBody = $this->createMock(StreamInterface::class);
         $responseBody->expects($this->once())
             ->method('getContents')
-            ->willReturn($responseJson);
+            ->willReturn('{invalid-json[');
 
         // Setup response.
         $response = $this->createMock(ResponseInterface::class);
@@ -269,7 +266,7 @@ class MostRecentTransactionRepositoryTest extends TestCase
         $repository = new MostRecentTransactionRepository($httpClient, $requestFactory, $appleAccount, []);
 
         $this->expectException(StoreAuthException::class);
-        $this->expectExceptionMessage("Unexpected data returned from apple storekit transaction history endpoint.");
+        $this->expectExceptionMessage("Failed to parse data returned from apple storekit transaction history endpoint.");
         $repository->get($productId, $transactionId);
     }
 

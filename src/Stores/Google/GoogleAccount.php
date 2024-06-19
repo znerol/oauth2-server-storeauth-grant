@@ -8,6 +8,7 @@ use DateInterval;
 use DateTimeImmutable;
 use DateTimeInterface;
 use DateTimeZone;
+use JsonException;
 use Lcobucci\Clock\SystemClock;
 use Lcobucci\JWT\Configuration;
 use Lcobucci\JWT\Signer\Key\InMemory;
@@ -17,13 +18,14 @@ use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use RuntimeException;
 use StoreAuth\Exceptions\StoreAuthException;
+use StoreAuth\Oauth2\ServiceAccount;
 
 /**
  * Implements service account for google play console.
  *
  * @see https://developers.google.com/identity/protocols/oauth2/service-account
  */
-final class GoogleAccount
+final class GoogleAccount implements ServiceAccount
 {
     private const AUTH_TOKEN_URL = "https://oauth2.googleapis.com/token";
     private const AUTH_TOKEN_AUDIENCE = "https://oauth2.googleapis.com/token";
@@ -81,18 +83,19 @@ final class GoogleAccount
      */
     public function getBearerToken(): string
     {
-        if ($this->accessExpires < $this->clock->now()) {
-            $this->renewBearerToken();
+        $now = $this->clock->now();
+        if ($this->accessExpires < $now) {
+            $this->renewBearerToken($now);
         }
+        assert(strlen($this->accessToken) > 0);
         return $this->accessToken;
     }
 
     /**
      * @throws \StoreAuth\Exceptions\StoreAuthException
      */
-    private function renewBearerToken(): void
+    private function renewBearerToken(DateTimeImmutable $iat): void
     {
-        $now = $this->clock->now();
         $key = InMemory::plainText($this->privateKey);
         $config = Configuration::forSymmetricSigner(new Sha256(), $key);
 
@@ -101,9 +104,9 @@ final class GoogleAccount
             ->issuedBy($this->iss)
             ->withClaim("scope", self::AUTH_TOKEN_SCOPE)
             ->permittedFor(self::AUTH_TOKEN_AUDIENCE)
-            ->issuedAt($now)
-            ->canOnlyBeUsedAfter($now)
-            ->expiresAt($now->add($this->authTokenTTL))
+            ->issuedAt($iat)
+            ->canOnlyBeUsedAfter($iat)
+            ->expiresAt($iat->add($this->authTokenTTL))
             ->getToken($config->signer(), $config->signingKey());
 
         $authRequest = $this->requestFactory->createRequest("POST", self::AUTH_TOKEN_URL)
@@ -115,21 +118,22 @@ final class GoogleAccount
             throw new StoreAuthException("Failed to fetch token from google oauth token endpoint. Response status=$responseCode");
         }
 
-        $authRecord = [];
         try {
-            $authRecord = json_decode($authResponse->getBody()->getContents(), true);
-        } catch (RuntimeException $e) {
+            $authRecord = json_decode(
+                json: $authResponse->getBody()->getContents(),
+                associative: true,
+                flags: JSON_THROW_ON_ERROR
+            );
+        } catch (RuntimeException | JsonException $e) {
             throw new StoreAuthException("Failed to parse data returned from google oauth token endpoint.", previous: $e);
         }
-        if (!is_array($authRecord)) {
-            throw new StoreAuthException("Unexpected data returned from google oauth token endpoint.");
-        }
-        if (empty($authRecord["access_token"] || empty($authRecord["expires_in"]))) {
-            throw new StoreAuthException("Unexpected data returned from google oauth token endpoint.");
-        }
+
+        assert(is_array($authRecord));
+        assert(is_string($authRecord["access_token"]));
+        assert(is_int($authRecord["expires_in"]));
 
         $this->accessToken = $authRecord["access_token"];
         $accessExpiresIn = intval($authRecord["expires_in"]);
-        $this->accessExpires = $now->add(new DateInterval("PT{$accessExpiresIn}S"));
+        $this->accessExpires = $iat->add(new DateInterval("PT{$accessExpiresIn}S"));
     }
 }

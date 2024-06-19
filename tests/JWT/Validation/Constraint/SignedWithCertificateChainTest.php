@@ -21,7 +21,7 @@ use StoreAuth\JWT\Validation\Constraint\SignedWithCertificateChain;
 use StoreAuth\Tests\KeypairTrait;
 
 #[CoversClass(className: SignedWithCertificateChain::class)]
-class SignedWithCertificateChainTest extends TestCase
+final class SignedWithCertificateChainTest extends TestCase
 {
     use KeypairTrait;
 
