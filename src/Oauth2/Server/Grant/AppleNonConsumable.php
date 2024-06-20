@@ -53,7 +53,9 @@ class AppleNonConsumable extends AbstractGrant implements GrantTypeInterface
         }
 
         // Validate requested scopes
-        $scopes = $this->validateScopes($this->getRequestParameter("scope", $request, $this->defaultScope));
+        $scopeParam = $this->getRequestParameter("scope", $request, $this->defaultScope);
+        assert(is_string($scopeParam));
+        $scopes = $this->validateScopes($scopeParam);
 
         // Finalize the requested scopes
         $finalizedScopes = $this->scopeRepository->finalizeScopes($scopes, $this->getIdentifier(), $client);

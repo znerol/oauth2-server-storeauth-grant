@@ -6,6 +6,7 @@ namespace StoreAuth\Tests\Stores\Google;
 
 use DateInterval;
 use DateTimeImmutable;
+use Lcobucci\Clock\Clock;
 use Lcobucci\Clock\FrozenClock;
 use Lcobucci\JWT\Signer\Key\InMemory;
 use Lcobucci\JWT\Signer\Rsa\Sha256;
@@ -19,7 +20,6 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
-use Psr\Clock\ClockInterface;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\RequestInterface;
@@ -121,11 +121,11 @@ final class GoogleAccountTest extends TestCase
         ["private" => $privateKey, "public" => $publicKey] = $this->generateKeypair(self::RSA_KEYPAIR_PARAMS);
 
         // Setup request and request factory.
-        $initialClock = $this->createStub(ClockInterface::class);
+        $initialClock = $this->createStub(Clock::class);
         $initialClock->method('now')->willReturn($now);
         $initialRequest = $this->getRequest($iss, $kid, $publicKey, $initialClock);
 
-        $renewalClock = $this->createStub(ClockInterface::class);
+        $renewalClock = $this->createStub(Clock::class);
         $renewalClock->method('now')->willReturn($expired);
         $renewalRequest = $this->getRequest($iss, $kid, $publicKey, $renewalClock);
 
@@ -173,7 +173,7 @@ final class GoogleAccountTest extends TestCase
                 default => throw new LogicException()
             });
 
-        $clock = $this->createStub(ClockInterface::class);
+        $clock = $this->createStub(Clock::class);
         $clock->method('now')->willReturn($now, $later, $expired);
         $account = new GoogleAccount($kid, $iss, $privateKey, $httpClient, $requestFactory, new DateInterval("PT600S"), $clock);
 
@@ -278,7 +278,7 @@ final class GoogleAccountTest extends TestCase
      * @param non-empty-string $kid
      * @param non-empty-string $publicKey
      */
-    private function getRequest(string $iss, string $kid, string $publicKey, ClockInterface $clock): RequestInterface&MockObject
+    private function getRequest(string $iss, string $kid, string $publicKey, Clock $clock): RequestInterface&MockObject
     {
         $request = $this->createMock(RequestInterface::class);
         $request->expects($this->once())
