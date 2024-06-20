@@ -1,2 +1,4 @@
+*.cache
+.vscode
 composer.lock
 vendor
