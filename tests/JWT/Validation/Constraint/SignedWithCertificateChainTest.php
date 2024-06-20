@@ -19,11 +19,13 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use StoreAuth\JWT\Validation\Constraint\SignedWithCertificateChain;
 use StoreAuth\Tests\KeypairTrait;
+use StoreAuth\Tests\TempfileTrait;
 
 #[CoversClass(className: SignedWithCertificateChain::class)]
 final class SignedWithCertificateChainTest extends TestCase
 {
     use KeypairTrait;
+    use TempfileTrait;
 
     public function testCertificateChain(): void
     {
@@ -65,21 +67,15 @@ final class SignedWithCertificateChainTest extends TestCase
 
         // Export root certificate file and verify the token using
         // SignedWithCertificateChain.
-        $rootCertFile = tempnam(sys_get_temp_dir(), "phpunit");
-        $this->assertNotFalse($rootCertFile);
-        assert(strlen($rootCertFile) > 0);
-        try {
-            $result = openssl_x509_export_to_file($rootCert, $rootCertFile);
-            $this->assertNotFalse($result);
+        $rootCertFile = $this->getTempfile();
+        $result = openssl_x509_export_to_file($rootCert, $rootCertFile);
+        $this->assertNotFalse($result);
 
-            $facade->parse(
-                $token,
-                new SignedWithCertificateChain(new Sha256(), [$rootCertFile]),
-                new StrictValidAt(new FrozenClock(new DateTimeImmutable())),
-            );
-        } finally {
-            @unlink($rootCertFile);
-        }
+        $facade->parse(
+            $token,
+            new SignedWithCertificateChain(new Sha256(), [$rootCertFile]),
+            new StrictValidAt(new FrozenClock(new DateTimeImmutable())),
+        );
     }
 
     public function testSelfSignedCertificate(): void
@@ -102,21 +98,15 @@ final class SignedWithCertificateChainTest extends TestCase
 
         // Export the self-signed certificate file and verify the token using
         // SignedWithCertificateChain.
-        $certFile = tempnam(sys_get_temp_dir(), "phpunit");
-        $this->assertNotFalse($certFile);
-        assert(strlen($certFile) > 0);
-        try {
-            $result = openssl_x509_export_to_file($cert, $certFile);
-            $this->assertNotFalse($result);
+        $certFile = $this->getTempfile();
+        $result = openssl_x509_export_to_file($cert, $certFile);
+        $this->assertNotFalse($result);
 
-            $facade->parse(
-                $token,
-                new SignedWithCertificateChain(new Sha256(), [$certFile]),
-                new StrictValidAt(new FrozenClock(new DateTimeImmutable())),
-            );
-        } finally {
-            @unlink($certFile);
-        }
+        $facade->parse(
+            $token,
+            new SignedWithCertificateChain(new Sha256(), [$certFile]),
+            new StrictValidAt(new FrozenClock(new DateTimeImmutable())),
+        );
     }
 
     public function testTrustAnchorBundle(): void
@@ -147,25 +137,19 @@ final class SignedWithCertificateChainTest extends TestCase
         // Export the self-signed certificate and the additional trust anchros
         // to a single file and verify the token using
         // SignedWithCertificateChain.
-        $certFile = tempnam(sys_get_temp_dir(), "phpunit");
-        $this->assertNotFalse($certFile);
-        assert(strlen($certFile) > 0);
-        try {
-            foreach ($anchors as $anchor) {
-                $pem = "";
-                $result = openssl_x509_export($anchor, $pem);
-                $this->assertNotFalse($result);
-                file_put_contents($certFile, $pem, FILE_APPEND);
-            }
-
-            $facade->parse(
-                $token,
-                new SignedWithCertificateChain(new Sha256(), [$certFile]),
-                new StrictValidAt(new FrozenClock(new DateTimeImmutable())),
-            );
-        } finally {
-            @unlink($certFile);
+        $certFile = $this->getTempfile();
+        foreach ($anchors as $anchor) {
+            $pem = "";
+            $result = openssl_x509_export($anchor, $pem);
+            $this->assertNotFalse($result);
+            file_put_contents($certFile, $pem, FILE_APPEND);
         }
+
+        $facade->parse(
+            $token,
+            new SignedWithCertificateChain(new Sha256(), [$certFile]),
+            new StrictValidAt(new FrozenClock(new DateTimeImmutable())),
+        );
     }
 
     public function testTrustAnchorIndividualFiles(): void
@@ -196,29 +180,22 @@ final class SignedWithCertificateChainTest extends TestCase
         // Export the self-signed certificate and the additional trust anchros
         // to individual files and verify the token using
         // SignedWithCertificateChain.
-        $certFiles = array_filter([
-            tempnam(sys_get_temp_dir(), "phpunit"),
-            tempnam(sys_get_temp_dir(), "phpunit"),
-            tempnam(sys_get_temp_dir(), "phpunit"),
-            tempnam(sys_get_temp_dir(), "phpunit"),
-        ]);
-        $this->assertCount(4, $certFiles);
-        try {
-            foreach ($anchors as $idx => $anchor) {
-                $result = openssl_x509_export_to_file($anchor, $certFiles[$idx]);
-                $this->assertNotFalse($result);
-            }
-
-            $facade->parse(
-                $token,
-                new SignedWithCertificateChain(new Sha256(), $certFiles),
-                new StrictValidAt(new FrozenClock(new DateTimeImmutable())),
-            );
-        } finally {
-            foreach ($certFiles as $certFile) {
-                @unlink($certFile);
-            }
+        $certFiles = [
+            $this->getTempfile(),
+            $this->getTempfile(),
+            $this->getTempfile(),
+            $this->getTempfile(),
+        ];
+        foreach ($anchors as $idx => $anchor) {
+            $result = openssl_x509_export_to_file($anchor, $certFiles[$idx]);
+            $this->assertNotFalse($result);
         }
+
+        $facade->parse(
+            $token,
+            new SignedWithCertificateChain(new Sha256(), $certFiles),
+            new StrictValidAt(new FrozenClock(new DateTimeImmutable())),
+        );
     }
 
     public function testSignatureAndChainMismatch(): void
@@ -265,23 +242,17 @@ final class SignedWithCertificateChainTest extends TestCase
 
         // Export the self-signed certificate file and verify the token using
         // SignedWithCertificateChain.
-        $certFile = tempnam(sys_get_temp_dir(), "phpunit");
-        $this->assertNotFalse($certFile);
-        assert(strlen($certFile) > 0);
-        try {
-            $result = openssl_x509_export_to_file($cert, $certFile);
-            $this->assertNotFalse($result);
+        $certFile = $this->getTempfile();
+        $result = openssl_x509_export_to_file($cert, $certFile);
+        $this->assertNotFalse($result);
 
-            $this->expectException(RequiredConstraintsViolated::class);
-            $this->expectExceptionMessage("Certificate chain is invalid");
-            $facade->parse(
-                $token,
-                new SignedWithCertificateChain(new Sha256(), [$certFile]),
-                new StrictValidAt(new FrozenClock(new DateTimeImmutable())),
-            );
-        } finally {
-            @unlink($certFile);
-        }
+        $this->expectException(RequiredConstraintsViolated::class);
+        $this->expectExceptionMessage("Certificate chain is invalid");
+        $facade->parse(
+            $token,
+            new SignedWithCertificateChain(new Sha256(), [$certFile]),
+            new StrictValidAt(new FrozenClock(new DateTimeImmutable())),
+        );
     }
 
     public function testMissingCertificateChainClaim(): void
@@ -300,23 +271,17 @@ final class SignedWithCertificateChainTest extends TestCase
 
         // Export the self-signed certificate file and verify the token using
         // SignedWithCertificateChain.
-        $certFile = tempnam(sys_get_temp_dir(), "phpunit");
-        $this->assertNotFalse($certFile);
-        assert(strlen($certFile) > 0);
-        try {
-            $result = openssl_x509_export_to_file($cert, $certFile);
-            $this->assertNotFalse($result);
+        $certFile = $this->getTempfile();
+        $result = openssl_x509_export_to_file($cert, $certFile);
+        $this->assertNotFalse($result);
 
-            $this->expectException(RequiredConstraintsViolated::class);
-            $this->expectExceptionMessage("Certificate header is missing");
-            $facade->parse(
-                $token,
-                new SignedWithCertificateChain(new Sha256(), [$certFile]),
-                new StrictValidAt(new FrozenClock(new DateTimeImmutable())),
-            );
-        } finally {
-            @unlink($certFile);
-        }
+        $this->expectException(RequiredConstraintsViolated::class);
+        $this->expectExceptionMessage("Certificate header is missing");
+        $facade->parse(
+            $token,
+            new SignedWithCertificateChain(new Sha256(), [$certFile]),
+            new StrictValidAt(new FrozenClock(new DateTimeImmutable())),
+        );
     }
 
     public function testInvalidCertificateChainClaim(): void
@@ -335,23 +300,17 @@ final class SignedWithCertificateChainTest extends TestCase
 
         // Export the self-signed certificate file and verify the token using
         // SignedWithCertificateChain.
-        $certFile = tempnam(sys_get_temp_dir(), "phpunit");
-        $this->assertNotFalse($certFile);
-        assert(strlen($certFile) > 0);
-        try {
-            $result = openssl_x509_export_to_file($cert, $certFile);
-            $this->assertNotFalse($result);
+        $certFile = $this->getTempfile();
+        $result = openssl_x509_export_to_file($cert, $certFile);
+        $this->assertNotFalse($result);
 
-            $this->expectException(RequiredConstraintsViolated::class);
-            $this->expectExceptionMessage("Certificate header contains unexpected data");
-            $facade->parse(
-                $token,
-                new SignedWithCertificateChain(new Sha256(), [$certFile]),
-                new StrictValidAt(new FrozenClock(new DateTimeImmutable())),
-            );
-        } finally {
-            @unlink($certFile);
-        }
+        $this->expectException(RequiredConstraintsViolated::class);
+        $this->expectExceptionMessage("Certificate header contains unexpected data");
+        $facade->parse(
+            $token,
+            new SignedWithCertificateChain(new Sha256(), [$certFile]),
+            new StrictValidAt(new FrozenClock(new DateTimeImmutable())),
+        );
     }
 
     public function testSignerMismatch(): void
@@ -374,23 +333,17 @@ final class SignedWithCertificateChainTest extends TestCase
 
         // Export the self-signed certificate file and verify the token using
         // SignedWithCertificateChain.
-        $certFile = tempnam(sys_get_temp_dir(), "phpunit");
-        $this->assertNotFalse($certFile);
-        assert(strlen($certFile) > 0);
-        try {
-            $result = openssl_x509_export_to_file($cert, $certFile);
-            $this->assertNotFalse($result);
+        $certFile = $this->getTempfile();
+        $result = openssl_x509_export_to_file($cert, $certFile);
+        $this->assertNotFalse($result);
 
-            $this->expectException(RequiredConstraintsViolated::class);
-            $this->expectExceptionMessage("Token signer mismatch");
-            $facade->parse(
-                $token,
-                new SignedWithCertificateChain(new Sha512(), [$certFile]),
-                new StrictValidAt(new FrozenClock(new DateTimeImmutable())),
-            );
-        } finally {
-            @unlink($certFile);
-        }
+        $this->expectException(RequiredConstraintsViolated::class);
+        $this->expectExceptionMessage("Token signer mismatch");
+        $facade->parse(
+            $token,
+            new SignedWithCertificateChain(new Sha512(), [$certFile]),
+            new StrictValidAt(new FrozenClock(new DateTimeImmutable())),
+        );
     }
 
     /**
