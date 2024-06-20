@@ -61,7 +61,8 @@ class GoogleNonConsumable extends AbstractGrant implements GrantTypeInterface
         // Validate product identified by scopes
         $product = $this->productRepository->getNonConsumableFromScope($finalizedScopes);
         if ($product === null) {
-            throw OAuthServerException::invalidRequest("scope");
+            $productLookupScopes = array_map(fn ($scope) => $scope->getIdentifier(), $finalizedScopes);
+            throw OAuthServerException::invalidScope(implode(" ", $productLookupScopes));
         }
 
         // Validate purchase token for the product
@@ -71,8 +72,9 @@ class GoogleNonConsumable extends AbstractGrant implements GrantTypeInterface
         }
 
         // Retreive purchase
+        $productSku = $product->getSku();
         try {
-            $statusPayload = $purchaseRepository->get($product->getSku(), $purchaseToken);
+            $statusPayload = $purchaseRepository->get($productSku, $purchaseToken);
         } catch (RuntimeException $e) {
             throw OAuthServerException::serverError("Failed to retrieve product purchase status", $e);
         }
@@ -96,7 +98,11 @@ class GoogleNonConsumable extends AbstractGrant implements GrantTypeInterface
         // Acknowledge the purchase.
         // https://developer.android.com/google/play/billing/integrate#process
         if ($statusPayload["acknowledgementState"] === 0) {
-            $purchaseRepository->acknowledge($product->getSku(), $purchaseToken);
+            try {
+                $purchaseRepository->acknowledge($productSku, $purchaseToken);
+            } catch (RuntimeException $e) {
+                throw OAuthServerException::serverError("Failed to acknowledge product purchase status", $e);
+            }
         }
 
         return $responseType;

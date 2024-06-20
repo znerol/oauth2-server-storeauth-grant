@@ -16,7 +16,9 @@
         "phpstan/phpstan-deprecation-rules": "^1.2",
         "phpstan/phpstan-strict-rules": "^1.6",
         "guzzlehttp/guzzle": "^7.0",
-        "phpstan/phpstan-phpunit": "^1.4"
+        "phpstan/phpstan-phpunit": "^1.4",
+        "dg/bypass-finals": "^1.7",
+        "laminas/laminas-diactoros": "^3.3"
     },
     "license": "MIT",
     "autoload": {

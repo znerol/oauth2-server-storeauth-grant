@@ -61,7 +61,8 @@ class AppleNonConsumable extends AbstractGrant implements GrantTypeInterface
         // Validate product identified by scopes
         $product = $this->productRepository->getNonConsumableFromScope($finalizedScopes);
         if ($product === null) {
-            throw OAuthServerException::invalidRequest("scope");
+            $productLookupScopes = array_map(fn ($scope) => $scope->getIdentifier(), $finalizedScopes);
+            throw OAuthServerException::invalidScope(implode(" ", $productLookupScopes));
         }
 
         // Validate transaction id
