@@ -45,7 +45,7 @@ Setup
 
 Wherever you initialize your objects, initialize a new instance of the authorization server and bind the storage interfaces and authorization code grant:
 
-```
+```PHP
 // Init our repositories
 $clientRepository = new ClientRepository(); // instance of ClientRepositoryInterface
 $scopeRepository = new ScopeRepository(); // instance of ScopeRepositoryInterface
@@ -68,7 +68,7 @@ $server = new \League\OAuth2\Server\AuthorizationServer(
 
 For google non-consumables:
 
-```
+```PHP
 // Init non-consumable product repository
 $productRepository = ProductRepository() // instance of NonConsumableRepositoryInterface
 
@@ -86,7 +86,7 @@ $server->enableGrantType(
 
 For apple non-consumables:
 
-```
+```PHP
 // Init non-consumable product repository
 $productRepository = ProductRepository() // instance of NonConsumableRepositoryInterface
 
@@ -100,4 +100,10 @@ $server->enableGrantType(
 );
 ```
 
-[rfc6749-4.5]: https://datatracker.ietf.org/doc/html/rfc6749#section-4.5)
+License
+-------
+
+[MIT License][mit]
+
+[rfc6749-4.5]: https://datatracker.ietf.org/doc/html/rfc6749#section-4.5
+[mit]: https://opensource.org/license/mit
