@@ -10,7 +10,7 @@
         "league/oauth2-server": "^8.3",
         "php": "^8.2",
         "psr/http-client": "^1.0",
-        "psr/http-factory": "^1.1"
+        "psr/http-factory": "^1.0"
     },
     "require-dev": {
         "dg/bypass-finals": "^1.7",
