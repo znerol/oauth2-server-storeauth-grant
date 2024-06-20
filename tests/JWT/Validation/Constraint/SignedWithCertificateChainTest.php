@@ -66,6 +66,8 @@ final class SignedWithCertificateChainTest extends TestCase
         // Export root certificate file and verify the token using
         // SignedWithCertificateChain.
         $rootCertFile = tempnam(sys_get_temp_dir(), "phpunit");
+        $this->assertNotFalse($rootCertFile);
+        assert(strlen($rootCertFile) > 0);
         try {
             $result = openssl_x509_export_to_file($rootCert, $rootCertFile);
             $this->assertNotFalse($result);
@@ -101,6 +103,8 @@ final class SignedWithCertificateChainTest extends TestCase
         // Export the self-signed certificate file and verify the token using
         // SignedWithCertificateChain.
         $certFile = tempnam(sys_get_temp_dir(), "phpunit");
+        $this->assertNotFalse($certFile);
+        assert(strlen($certFile) > 0);
         try {
             $result = openssl_x509_export_to_file($cert, $certFile);
             $this->assertNotFalse($result);
@@ -144,6 +148,8 @@ final class SignedWithCertificateChainTest extends TestCase
         // to a single file and verify the token using
         // SignedWithCertificateChain.
         $certFile = tempnam(sys_get_temp_dir(), "phpunit");
+        $this->assertNotFalse($certFile);
+        assert(strlen($certFile) > 0);
         try {
             foreach ($anchors as $anchor) {
                 $pem = "";
@@ -190,12 +196,13 @@ final class SignedWithCertificateChainTest extends TestCase
         // Export the self-signed certificate and the additional trust anchros
         // to individual files and verify the token using
         // SignedWithCertificateChain.
-        $certFiles = [
+        $certFiles = array_filter([
             tempnam(sys_get_temp_dir(), "phpunit"),
             tempnam(sys_get_temp_dir(), "phpunit"),
             tempnam(sys_get_temp_dir(), "phpunit"),
             tempnam(sys_get_temp_dir(), "phpunit"),
-        ];
+        ]);
+        $this->assertCount(4, $certFiles);
         try {
             foreach ($anchors as $idx => $anchor) {
                 $result = openssl_x509_export_to_file($anchor, $certFiles[$idx]);
@@ -259,6 +266,8 @@ final class SignedWithCertificateChainTest extends TestCase
         // Export the self-signed certificate file and verify the token using
         // SignedWithCertificateChain.
         $certFile = tempnam(sys_get_temp_dir(), "phpunit");
+        $this->assertNotFalse($certFile);
+        assert(strlen($certFile) > 0);
         try {
             $result = openssl_x509_export_to_file($cert, $certFile);
             $this->assertNotFalse($result);
@@ -292,6 +301,8 @@ final class SignedWithCertificateChainTest extends TestCase
         // Export the self-signed certificate file and verify the token using
         // SignedWithCertificateChain.
         $certFile = tempnam(sys_get_temp_dir(), "phpunit");
+        $this->assertNotFalse($certFile);
+        assert(strlen($certFile) > 0);
         try {
             $result = openssl_x509_export_to_file($cert, $certFile);
             $this->assertNotFalse($result);
@@ -325,6 +336,8 @@ final class SignedWithCertificateChainTest extends TestCase
         // Export the self-signed certificate file and verify the token using
         // SignedWithCertificateChain.
         $certFile = tempnam(sys_get_temp_dir(), "phpunit");
+        $this->assertNotFalse($certFile);
+        assert(strlen($certFile) > 0);
         try {
             $result = openssl_x509_export_to_file($cert, $certFile);
             $this->assertNotFalse($result);
@@ -362,6 +375,8 @@ final class SignedWithCertificateChainTest extends TestCase
         // Export the self-signed certificate file and verify the token using
         // SignedWithCertificateChain.
         $certFile = tempnam(sys_get_temp_dir(), "phpunit");
+        $this->assertNotFalse($certFile);
+        assert(strlen($certFile) > 0);
         try {
             $result = openssl_x509_export_to_file($cert, $certFile);
             $this->assertNotFalse($result);
