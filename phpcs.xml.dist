@@ -12,9 +12,6 @@
 
     <file>src</file>
     <file>tests</file>
-    <file>examples</file>
-
-    <exclude-pattern>examples/vendor/*</exclude-pattern>
 
     <rule ref="PSR12">
         <exclude name="Generic.Files.LineLength.TooLong" />
