@@ -27,7 +27,7 @@ class GoogleNonConsumable extends AbstractGrant implements GrantTypeInterface
     /**
      * {@inheritdoc}
      */
-    public function getIdentifier()
+    public function getIdentifier(): string
     {
         return "urn:uuid:ea31e77f-cb72-486f-b5c4-deef43e839f3";
     }
@@ -39,7 +39,7 @@ class GoogleNonConsumable extends AbstractGrant implements GrantTypeInterface
         ServerRequestInterface $request,
         ResponseTypeInterface $responseType,
         DateInterval $accessTokenTTL
-    ) {
+    ): ResponseTypeInterface {
         // Validate client_id and load associated service account.
         $clientId = $this->getRequestParameter("client_id", $request);
         if ($clientId === null) {

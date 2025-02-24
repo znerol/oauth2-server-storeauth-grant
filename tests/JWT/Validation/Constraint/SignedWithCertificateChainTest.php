@@ -15,6 +15,7 @@ use Lcobucci\JWT\Validation\Constraint\StrictValidAt;
 use Lcobucci\JWT\Validation\RequiredConstraintsViolated;
 use OpenSSLAsymmetricKey;
 use OpenSSLCertificate;
+use OpenSSLCertificateSigningRequest;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use StoreAuth\JWT\Validation\Constraint\SignedWithCertificateChain;
@@ -367,7 +368,7 @@ final class SignedWithCertificateChainTest extends TestCase
         array $cert_options = []
     ): OpenSSLCertificate {
         $csr = openssl_csr_new($dn, $key, $csr_options);
-        $this->assertNotFalse($csr);
+        $this->assertInstanceOf(OpenSSLCertificateSigningRequest::class, $csr);
 
         $cert = openssl_csr_sign(
             $csr,

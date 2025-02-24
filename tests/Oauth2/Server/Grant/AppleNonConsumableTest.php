@@ -7,11 +7,11 @@ namespace StoreAuth\Tests\Oauth2\Server\Grant;
 use DateInterval;
 use DG\BypassFinals;
 use Laminas\Diactoros\ServerRequest;
-use League\Event\EmitterInterface;
 use League\OAuth2\Server\CryptKey;
 use League\OAuth2\Server\Entities\AccessTokenEntityInterface;
 use League\OAuth2\Server\Entities\ClientEntityInterface;
 use League\OAuth2\Server\Entities\ScopeEntityInterface;
+use League\OAuth2\Server\EventEmitting\EventEmitter;
 use League\OAuth2\Server\Exception\OAuthServerException;
 use League\OAuth2\Server\Repositories\AccessTokenRepositoryInterface;
 use League\OAuth2\Server\Repositories\ClientRepositoryInterface;
@@ -28,6 +28,7 @@ use StoreAuth\Oauth2\Server\Repositories\NonConsumableRepositoryInterface;
 use StoreAuth\Oauth2\Server\StoreFactories\AppleMostRecentTransactionFactoryInterface;
 use StoreAuth\Stores\Apple\MostRecentTransactionRepository;
 use StoreAuth\Tests\KeypairTrait;
+use StoreAuth\Tests\PHPUnit\ClosureMock;
 
 #[CoversClass(className: AppleNonConsumable::class)]
 final class AppleNonConsumableTest extends TestCase
@@ -103,10 +104,13 @@ final class AppleNonConsumableTest extends TestCase
             ->with($clientEntity)
             ->willReturn($purchaseRepository);
 
-        $eventEmitter = $this->createMock(EmitterInterface::class);
-        $eventEmitter->expects($this->once())
-            ->method("emit")
+        $listener = $this->createMock(ClosureMock::class);
+        assert(is_callable($listener));
+        $listener->expects($this->once())
+            ->method('__invoke')
             ->with($this->isInstanceOf(RequestAccessTokenEvent::class));
+        $eventEmitter = new EventEmitter();
+        $eventEmitter->addListener(RequestEvent::ACCESS_TOKEN_ISSUED, $listener);
 
         ["private" => $privateKey] = $this->generateKeypair(self::RSA_KEYPAIR_PARAMS);
 
@@ -143,7 +147,7 @@ final class AppleNonConsumableTest extends TestCase
         $accessTokenRepository = $this->createStub(AccessTokenRepositoryInterface::class);
         $productRepository = $this->createStub(NonConsumableRepositoryInterface::class);
         $serviceFactory = $this->createStub(AppleMostRecentTransactionFactoryInterface::class);
-        $eventEmitter = $this->createStub(EmitterInterface::class);
+        $eventEmitter = new EventEmitter();
 
         ["private" => $privateKey] = $this->generateKeypair(self::RSA_KEYPAIR_PARAMS);
 
@@ -183,10 +187,13 @@ final class AppleNonConsumableTest extends TestCase
         $accessTokenRepository = $this->createStub(AccessTokenRepositoryInterface::class);
         $productRepository = $this->createStub(NonConsumableRepositoryInterface::class);
         $serviceFactory = $this->createStub(AppleMostRecentTransactionFactoryInterface::class);
-        $eventEmitter = $this->createMock(EmitterInterface::class);
-        $eventEmitter->expects($this->once())
-            ->method("emit")
+        $listener = $this->createMock(ClosureMock::class);
+        assert(is_callable($listener));
+        $listener->expects($this->once())
+            ->method('__invoke')
             ->with($this->isInstanceOf(RequestEvent::class));
+        $eventEmitter = new EventEmitter();
+        $eventEmitter->addListener(RequestEvent::CLIENT_AUTHENTICATION_FAILED, $listener);
 
         ["private" => $privateKey] = $this->generateKeypair(self::RSA_KEYPAIR_PARAMS);
 
@@ -234,7 +241,7 @@ final class AppleNonConsumableTest extends TestCase
             ->with($clientEntity)
             ->willReturn(null);
 
-        $eventEmitter = $this->createStub(EmitterInterface::class);
+        $eventEmitter = new EventEmitter();
 
         ["private" => $privateKey] = $this->generateKeypair(self::RSA_KEYPAIR_PARAMS);
 
@@ -290,7 +297,7 @@ final class AppleNonConsumableTest extends TestCase
             ->with($clientEntity)
             ->willReturn($purchaseRepository);
 
-        $eventEmitter = $this->createStub(EmitterInterface::class);
+        $eventEmitter = new EventEmitter();
 
         ["private" => $privateKey] = $this->generateKeypair(self::RSA_KEYPAIR_PARAMS);
 
@@ -356,7 +363,7 @@ final class AppleNonConsumableTest extends TestCase
             ->with($clientEntity)
             ->willReturn($purchaseRepository);
 
-        $eventEmitter = $this->createStub(EmitterInterface::class);
+        $eventEmitter = new EventEmitter();
 
         ["private" => $privateKey] = $this->generateKeypair(self::RSA_KEYPAIR_PARAMS);
 
@@ -422,7 +429,7 @@ final class AppleNonConsumableTest extends TestCase
             ->with($clientEntity)
             ->willReturn($purchaseRepository);
 
-        $eventEmitter = $this->createStub(EmitterInterface::class);
+        $eventEmitter = new EventEmitter();
 
         ["private" => $privateKey] = $this->generateKeypair(self::RSA_KEYPAIR_PARAMS);
 
@@ -496,7 +503,7 @@ final class AppleNonConsumableTest extends TestCase
             ->with($clientEntity)
             ->willReturn($purchaseRepository);
 
-        $eventEmitter = $this->createStub(EmitterInterface::class);
+        $eventEmitter = new EventEmitter();
 
         ["private" => $privateKey] = $this->generateKeypair(self::RSA_KEYPAIR_PARAMS);
 
@@ -572,7 +579,7 @@ final class AppleNonConsumableTest extends TestCase
             ->with($clientEntity)
             ->willReturn($purchaseRepository);
 
-        $eventEmitter = $this->createStub(EmitterInterface::class);
+        $eventEmitter = new EventEmitter();
 
         ["private" => $privateKey] = $this->generateKeypair(self::RSA_KEYPAIR_PARAMS);
 
