@@ -27,7 +27,7 @@ class AppleNonConsumable extends AbstractGrant implements GrantTypeInterface
     /**
      * {@inheritdoc}
      */
-    public function getIdentifier()
+    public function getIdentifier(): string
     {
         return "urn:uuid:c7e545a5-d72b-4294-a173-bb1858aae099";
     }
@@ -39,7 +39,7 @@ class AppleNonConsumable extends AbstractGrant implements GrantTypeInterface
         ServerRequestInterface $request,
         ResponseTypeInterface $responseType,
         DateInterval $accessTokenTTL
-    ) {
+    ): ResponseTypeInterface {
         // Validate client_id and load associated service account.
         $clientId = $this->getRequestParameter("client_id", $request);
         if ($clientId === null) {

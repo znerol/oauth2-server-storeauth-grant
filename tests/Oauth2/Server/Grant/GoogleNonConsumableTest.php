@@ -7,11 +7,11 @@ namespace StoreAuth\Tests\Oauth2\Server\Grant;
 use DateInterval;
 use DG\BypassFinals;
 use Laminas\Diactoros\ServerRequest;
-use League\Event\EmitterInterface;
 use League\OAuth2\Server\CryptKey;
 use League\OAuth2\Server\Entities\AccessTokenEntityInterface;
 use League\OAuth2\Server\Entities\ClientEntityInterface;
 use League\OAuth2\Server\Entities\ScopeEntityInterface;
+use League\OAuth2\Server\EventEmitting\EventEmitter;
 use League\OAuth2\Server\Exception\OAuthServerException;
 use League\OAuth2\Server\Repositories\AccessTokenRepositoryInterface;
 use League\OAuth2\Server\Repositories\ClientRepositoryInterface;
@@ -28,6 +28,7 @@ use StoreAuth\Oauth2\Server\Repositories\NonConsumableRepositoryInterface;
 use StoreAuth\Oauth2\Server\StoreFactories\GoogleProductPurchaseFactoryInterface;
 use StoreAuth\Stores\Google\ProductPurchaseRepository;
 use StoreAuth\Tests\KeypairTrait;
+use StoreAuth\Tests\PHPUnit\ClosureMock;
 
 #[CoversClass(className: GoogleNonConsumable::class)]
 final class GoogleNonConsumableTest extends TestCase
@@ -104,10 +105,13 @@ final class GoogleNonConsumableTest extends TestCase
             ->with($clientEntity)
             ->willReturn($purchaseRepository);
 
-        $eventEmitter = $this->createMock(EmitterInterface::class);
-        $eventEmitter->expects($this->once())
-            ->method("emit")
-            ->with($this->isInstanceOf(RequestAccessTokenEvent::class));
+        $listener = $this->createMock(ClosureMock::class);
+        assert(is_callable($listener));
+        $listener->expects($this->once())
+            ->method('__invoke')
+            ->with($this->isInstanceOf(RequestEvent::class));
+        $eventEmitter = new EventEmitter();
+        $eventEmitter->addListener(RequestEvent::ACCESS_TOKEN_ISSUED, $listener);
 
         ["private" => $privateKey] = $this->generateKeypair(self::RSA_KEYPAIR_PARAMS);
 
@@ -199,10 +203,13 @@ final class GoogleNonConsumableTest extends TestCase
             ->with($clientEntity)
             ->willReturn($purchaseRepository);
 
-        $eventEmitter = $this->createMock(EmitterInterface::class);
-        $eventEmitter->expects($this->once())
-            ->method("emit")
-            ->with($this->isInstanceOf(RequestAccessTokenEvent::class));
+        $listener = $this->createMock(ClosureMock::class);
+        assert(is_callable($listener));
+        $listener->expects($this->once())
+            ->method('__invoke')
+            ->with($this->isInstanceOf(RequestEvent::class));
+        $eventEmitter = new EventEmitter();
+        $eventEmitter->addListener(RequestEvent::ACCESS_TOKEN_ISSUED, $listener);
 
         ["private" => $privateKey] = $this->generateKeypair(self::RSA_KEYPAIR_PARAMS);
 
@@ -239,7 +246,7 @@ final class GoogleNonConsumableTest extends TestCase
         $accessTokenRepository = $this->createStub(AccessTokenRepositoryInterface::class);
         $productRepository = $this->createStub(NonConsumableRepositoryInterface::class);
         $serviceFactory = $this->createStub(GoogleProductPurchaseFactoryInterface::class);
-        $eventEmitter = $this->createStub(EmitterInterface::class);
+        $eventEmitter = new EventEmitter();
 
         ["private" => $privateKey] = $this->generateKeypair(self::RSA_KEYPAIR_PARAMS);
 
@@ -279,10 +286,13 @@ final class GoogleNonConsumableTest extends TestCase
         $accessTokenRepository = $this->createStub(AccessTokenRepositoryInterface::class);
         $productRepository = $this->createStub(NonConsumableRepositoryInterface::class);
         $serviceFactory = $this->createStub(GoogleProductPurchaseFactoryInterface::class);
-        $eventEmitter = $this->createMock(EmitterInterface::class);
-        $eventEmitter->expects($this->once())
-            ->method("emit")
+        $listener = $this->createMock(ClosureMock::class);
+        assert(is_callable($listener));
+        $listener->expects($this->once())
+            ->method('__invoke')
             ->with($this->isInstanceOf(RequestEvent::class));
+        $eventEmitter = new EventEmitter();
+        $eventEmitter->addListener(RequestEvent::CLIENT_AUTHENTICATION_FAILED, $listener);
 
         ["private" => $privateKey] = $this->generateKeypair(self::RSA_KEYPAIR_PARAMS);
 
@@ -330,7 +340,7 @@ final class GoogleNonConsumableTest extends TestCase
             ->with($clientEntity)
             ->willReturn(null);
 
-        $eventEmitter = $this->createStub(EmitterInterface::class);
+        $eventEmitter = new EventEmitter();
 
         ["private" => $privateKey] = $this->generateKeypair(self::RSA_KEYPAIR_PARAMS);
 
@@ -386,7 +396,7 @@ final class GoogleNonConsumableTest extends TestCase
             ->with($clientEntity)
             ->willReturn($purchaseRepository);
 
-        $eventEmitter = $this->createStub(EmitterInterface::class);
+        $eventEmitter = new EventEmitter();
 
         ["private" => $privateKey] = $this->generateKeypair(self::RSA_KEYPAIR_PARAMS);
 
@@ -452,7 +462,7 @@ final class GoogleNonConsumableTest extends TestCase
             ->with($clientEntity)
             ->willReturn($purchaseRepository);
 
-        $eventEmitter = $this->createStub(EmitterInterface::class);
+        $eventEmitter = new EventEmitter();
 
         ["private" => $privateKey] = $this->generateKeypair(self::RSA_KEYPAIR_PARAMS);
 
@@ -518,7 +528,7 @@ final class GoogleNonConsumableTest extends TestCase
             ->with($clientEntity)
             ->willReturn($purchaseRepository);
 
-        $eventEmitter = $this->createStub(EmitterInterface::class);
+        $eventEmitter = new EventEmitter();
 
         ["private" => $privateKey] = $this->generateKeypair(self::RSA_KEYPAIR_PARAMS);
 
@@ -592,7 +602,7 @@ final class GoogleNonConsumableTest extends TestCase
             ->with($clientEntity)
             ->willReturn($purchaseRepository);
 
-        $eventEmitter = $this->createStub(EmitterInterface::class);
+        $eventEmitter = new EventEmitter();
 
         ["private" => $privateKey] = $this->generateKeypair(self::RSA_KEYPAIR_PARAMS);
 
@@ -671,7 +681,7 @@ final class GoogleNonConsumableTest extends TestCase
             ->with($clientEntity)
             ->willReturn($purchaseRepository);
 
-        $eventEmitter = $this->createStub(EmitterInterface::class);
+        $eventEmitter = new EventEmitter();
 
         ["private" => $privateKey] = $this->generateKeypair(self::RSA_KEYPAIR_PARAMS);
 
@@ -762,10 +772,13 @@ final class GoogleNonConsumableTest extends TestCase
             ->with($clientEntity)
             ->willReturn($purchaseRepository);
 
-        $eventEmitter = $this->createMock(EmitterInterface::class);
-        $eventEmitter->expects($this->once())
-            ->method("emit")
+        $listener = $this->createMock(ClosureMock::class);
+        assert(is_callable($listener));
+        $listener->expects($this->once())
+            ->method('__invoke')
             ->with($this->isInstanceOf(RequestAccessTokenEvent::class));
+        $eventEmitter = new EventEmitter();
+        $eventEmitter->addListener(RequestEvent::ACCESS_TOKEN_ISSUED, $listener);
 
         ["private" => $privateKey] = $this->generateKeypair(self::RSA_KEYPAIR_PARAMS);
 
