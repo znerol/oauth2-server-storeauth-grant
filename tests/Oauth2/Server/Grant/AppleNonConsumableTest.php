@@ -187,7 +187,7 @@ final class AppleNonConsumableTest extends TestCase
         $accessTokenRepository = $this->createStub(AccessTokenRepositoryInterface::class);
         $productRepository = $this->createStub(NonConsumableRepositoryInterface::class);
         $serviceFactory = $this->createStub(AppleMostRecentTransactionFactoryInterface::class);
-        $listener = $this->createMock(ClosureMock::class);;
+        $listener = $this->createMock(ClosureMock::class);
         assert(is_callable($listener));
         $listener->expects($this->once())
             ->method('__invoke')
